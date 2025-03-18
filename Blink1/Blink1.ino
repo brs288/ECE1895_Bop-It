@@ -1,3 +1,5 @@
+// Bailey Stout ECE 1895 Assignment #15 - Introduction to Git
+
 // One time setup
 void setup() {
   pinMode(8, OUTPUT);
