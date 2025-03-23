@@ -1,8 +1,10 @@
 import os
 from PIL import Image, ImageDraw
 
+player_x, player_y = 115, 155
+
 COORDS = {
-    "subzero": (115, 155),
+    "subzero": (player_x, player_y),
     "scorpion": (220, 155),
     "scorpion_name": (275, 16),
     "subzero_name": (47, 16),
@@ -13,6 +15,22 @@ COORDS = {
     "number_center": (160, 17),
     "score_title": (160, 40),
     "command": (160, 100),
+    "subzero_down_block": (player_x, player_y + 20),
+    "subzero_down_kick": (player_x, player_y + 10),
+    "subzero_down_punch": (player_x, player_y + 20),
+    "subzero_left_kick": (player_x, player_y + 20),
+    "subzero_left_punch": (player_x + 10, player_y),
+    "subzero_neutral_block": (player_x, player_y),
+    "subzero_neutral_kick": (player_x, player_y),
+    "subzero_neutral_punch": (player_x, player_y),
+    "subzero_right_kick": (player_x, player_y),
+    "subzero_right_punch": (player_x, player_y),
+    "subzero_up_block": (player_x, player_y),
+    "subzero_up_kick": (player_x, player_y),
+    "subzero_up_punch": (player_x + 10, player_y - 10),
+    "subzero_fail1_fail1": (player_x, player_y),
+    "subzero_fail2_fail2": (player_x, player_y),
+    "subzero_fail3_fail3": (player_x, player_y),
 }
 
 CMD_LIST = [
@@ -20,7 +38,7 @@ CMD_LIST = [
     "left_punch",
     "right_punch",
     "down_punch",
-    "neutral_kick",
+    "neutral_punch",
     "up_kick",
     "left_kick",
     "right_kick",
@@ -90,7 +108,8 @@ def generate_scene_level(score: int, output_path):
     """
     background = "assets/arenas/background1.bmp"
 
-    Image.open(background).convert("RGBA").save(output_path, format="BMP")
+    img = Image.open(background).convert("RGBA")
+    img.save(output_path, format="BMP")
 
     digits = [int(d) for d in str(score)]
     overlay_images(output_path, "assets/game_info/score_title.bmp", output_path, *COORDS["score_title"])
@@ -107,58 +126,65 @@ def generate_scene_level(score: int, output_path):
     overlay_images(output_path, "assets/game_info/scorpion_name.bmp", output_path, *COORDS["scorpion_name"])
     overlay_images(output_path, "assets/game_info/subzero_name.bmp", output_path, *COORDS["subzero_name"])
 
+    final_image = Image.open(output_path).convert("RGB")
+    final_image.save(output_path, format="BMP")
+
 
 def generate_commands(score: int, output_path, first_command: str, second_command: str):
     """
-    Use previously generated generic scene to create command prompt for user
-    :param score:
-    :param output_path:
-    :param first_command:
-    :param second_command:
-    :return:
+    Use previously generated generic scene to create command prompt for user.
+    :param score: Current game score
+    :param output_path: Path to save the generated scene
+    :param first_command: First command string
+    :param second_command: Second command string
     """
     if first_command in ["fail1", "fail2", "fail3"]:
         return
+
     background = f"levels/level_{score}.bmp"
 
-    Image.open(background).convert("RGBA").save(output_path, format="BMP")
+    img = Image.open(background).convert("RGBA")
+    img.save(output_path, format="BMP")
 
     overlay_images(output_path, "assets/enemy/scorpion_idle.bmp", output_path, *COORDS["scorpion"])
     overlay_images(output_path, "assets/player/player_idle.bmp", output_path, *COORDS["subzero"])
-
     overlay_images(output_path, f"assets/game_info/{first_command}_{second_command}.bmp", output_path, *COORDS["command"])
-    #  overlay_images(output_path, f"assets/player/{second_command}/{first_command}_{second_command}.bmp", output_path, *COORDS["command"])
+
+    final_image = Image.open(output_path).convert("RGB")
+    final_image.save(output_path, format="BMP")
 
 
 def generate_results(score: int, output_path, first_command: str, second_command: str):
     """
-    Use previously generated generic scene to create result to display
-    :param score:
-    :param output_path:
-    :param first_command:
-    :param second_command:
-    :return:
+    Use previously generated generic scene to create result to display.
+    :param score: Current game score
+    :param output_path: Path to save the generated scene
+    :param first_command: First command string
+    :param second_command: Second command string
     """
     background = f"levels/level_{score}.bmp"
-    Image.open(background).convert("RGBA").save(output_path, format="BMP")
+
+    img = Image.open(background).convert("RGBA")
+    img.save(output_path, format="BMP")
 
     if first_command in ["fail1", "fail2", "fail3"]:
         if first_command == "fail1":
             overlay_images(output_path, "assets/enemy/scorpion_kick.bmp", output_path, *COORDS["scorpion"])
-            overlay_images(output_path, f"assets/player/player_hit.bmp", output_path, *COORDS["subzero"])
-            return
-        if first_command == "fail2":
+            overlay_images(output_path, "assets/player/player_hit.bmp", output_path, *COORDS["subzero"])
+        elif first_command in ["fail2", "fail3"]:
             overlay_images(output_path, "assets/enemy/scorpion_wins.bmp", output_path, *COORDS["scorpion"])
-            overlay_images(output_path, f"assets/player/player_dead.bmp", output_path, *COORDS["subzero"])
-            return
-        if first_command == "fail3":
-            overlay_images(output_path, "assets/enemy/scorpion_wins.bmp", output_path, *COORDS["scorpion"])
-            overlay_images(output_path, f"assets/player/player_dead.bmp", output_path, *COORDS["subzero"])
-            overlay_images(output_path, f"assets/game_info/game_over.bmp", output_path, *COORDS["command"])
-            return
+            overlay_images(output_path, "assets/player/player_dead.bmp", output_path, *COORDS["subzero"])
+            if first_command == "fail3":
+                overlay_images(output_path, "assets/game_info/game_over.bmp", output_path, *COORDS["command"])
+        final_image = Image.open(output_path).convert("RGB")
+        final_image.save(output_path, format="BMP")
+        return
 
     overlay_images(output_path, "assets/enemy/scorpion_hit.bmp", output_path, *COORDS["scorpion"])
-    overlay_images(output_path, f"assets/player/{second_command}/{first_command}_{second_command}.bmp", output_path, *COORDS["subzero"])
+    overlay_images(output_path, f"assets/player/{second_command}/{first_command}_{second_command}.bmp", output_path, *COORDS[f"subzero_{first_command}_{second_command}"])
+
+    final_image = Image.open(output_path).convert("RGB")
+    final_image.save(output_path, format="BMP")
 
 
 if __name__ == "__main__":
