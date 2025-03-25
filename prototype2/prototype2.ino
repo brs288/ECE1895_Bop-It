@@ -1,3 +1,5 @@
+
+
 /*
 
   Test version of the game that uses the 3.2 inch rgb tft display
@@ -7,17 +9,23 @@
 
 */
 
+#include <DFRobotDFPlayerMini.h>
+#include <Adafruit_GFX.h>         // Core graphics library
+#include <Adafruit_ILI9341.h>     // Hardware-specific library
+#include <SdFat.h>                // SD card & FAT filesystem library
+#include <Adafruit_ImageReader.h> // Image-reading functions
 
-#include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
 
-// TFT SPI Pins
+#define SD_CS   4 // SD card select pin
 #define TFT_CS     10  // Chip Select
-#define TFT_RST    9   // Reset
-#define TFT_DC     8   // Data/Command
+#define TFT_DC     9  // Data/Command
 
-Adafruit_ILI9341 display = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
+
+SdFat                SD;         // SD card filesystem
+Adafruit_ImageReader reader(SD); // Image-reader object, pass in SD filesys
+
+DFRobotDFPlayerMini myDFPlayer;
 
 // Button Pins
 const int button1 = 4;
@@ -37,14 +45,24 @@ void setup() {
     pinMode(button3, INPUT);
     
     // Initialize the TFT display
-    display.begin();
-    display.fillScreen(ILI9341_BLACK);  // Clear screen
-    display.setRotation(3);  // Adjust rotation for landscape mode
+    tft.begin();
+    tft.fillScreen(ILI9341_BLACK);  // Clear screen
+    tft.setRotation(3);  // Adjust rotation for landscape mode
 
+    if(!SD.begin(SD_CS, SD_SCK_MHZ(25))) { // ESP32 requires 25 MHz limit
+      for(;;); // Fatal error, do not continue
+    }
+
+    // Audio
+    Serial.begin(9600);
+    if (!myDFPlayer.begin(Serial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
+      while(true);
+    }
     resetGame();  // Start in "Press Start" state
 }
 
 void loop() {
+    myDFPlayer.play(1);  //Play the first mp3
     if (!gameRunning) {
         waitForStart();
         countdown();
@@ -67,21 +85,6 @@ void waitForStart() {
 }
 
 void countdown() {
-    for (int i = 3; i > 0; i--) {
-        display.fillScreen(ILI9341_BLACK);
-        
-        display.setTextSize(2);
-        display.setTextColor(ILI9341_WHITE);
-        display.setCursor(100, 80);
-        display.println("Starting in");
-
-        display.setTextSize(5);
-        display.setCursor(140, 120);
-        display.println(String(i));
-
-        display.display();
-        delay(1000);
-    }
 }
 
 void playLevel() {
@@ -105,27 +108,7 @@ void playLevel() {
 }
 
 void showGameStatus() {
-    display.fillScreen(ILI9341_BLACK);
-    
-    display.setTextSize(2);
-    display.setTextColor(ILI9341_WHITE);
-
-    display.setCursor(10, 10);
-    display.println("Level: " + String(level));
-
-    display.setCursor(10, 50);
-    display.println("Speed: " + String(timeLimit / 1000.0) + "s");
-
-    display.setTextSize(3);
-    display.setCursor(80, 100);
-    display.setTextColor(ILI9341_CYAN);
-    display.println("Press " + String(targetButton));
-
-    // Progress Bar
-    int barWidth = map(millis() - startTime, 0, timeLimit, 320, 0);
-    display.fillRect(10, 200, barWidth, 10, ILI9341_GREEN); 
-
-    display.display();
+     reader.drawBMP("/results/level_0/down_kick.bmp", tft, 0, 0);
 }
 
 int getPressedButton() {
@@ -161,40 +144,12 @@ void levelUp() {
 }
 
 void gameOver() {
-    display.fillScreen(ILI9341_BLACK);
-    
-    display.setTextSize(3);
-    display.setTextColor(ILI9341_RED);
-
-    display.setCursor(70, 80);
-    display.println("Game Over!");
-
-    display.setTextSize(2);
-    display.setTextColor(ILI9341_WHITE);
-    display.setCursor(90, 140);
-    display.println("Score: " + String(level));
-
-    display.display();
-    delay(3000);
-    resetGame();
+    reader.drawBMP("/results/level_0/down_block.bmp", tft, 0, 0);
 }
 
+
 void victoryScreen() {
-    display.fillScreen(ILI9341_BLACK);
-    
-    display.setTextSize(3);
-    display.setTextColor(ILI9341_YELLOW);
-
-    display.setCursor(90, 80);
-    display.println("Victory!");
-
-    display.setTextSize(2);
-    display.setTextColor(ILI9341_WHITE);
-    display.setCursor(90, 140);
-    display.println("Score: 99");
-
-    display.display();
-    delay(3000);
+    reader.drawBMP("/results/level_0/down_kick.bmp", tft, 0, 0);
 }
 
 void resetGame() {
@@ -202,12 +157,5 @@ void resetGame() {
 }
 
 void showMessage(String msg, uint16_t color) {
-    display.fillScreen(ILI9341_BLACK);
-    
-    display.setTextSize(3);
-    display.setTextColor(color);
-    display.setCursor(70, 100);
-    display.println(msg);
-    
-    display.display();
+ 
 }
