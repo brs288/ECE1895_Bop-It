@@ -4,7 +4,6 @@
 #include <Adafruit_ImageReader.h> // Image-reading functions
 #include <DFRobotDFPlayerMini.h>
 
-
 #define SD_CS   4 // SD card select pin
 #define TFT_DC  9 // TFT display/command pin
 #define TFT_CS 10 // TFT select pin
@@ -27,9 +26,9 @@ int level = 0;
 int timeLimit = 5000;
 int timeInitial = timeLimit;
 unsigned long startTime;
-unsigned int targetButton;
-unsigned int targetPositionX;
-unsigned int targetPositionY;
+int targetButton;
+int targetPositionX;
+int targetPositionY;
 bool gameRunning = false;
 
 void setup(void) {
@@ -65,10 +64,15 @@ void setup(void) {
 
 void loop() {
     if (!gameRunning) {
+        reader.drawBMP("/3012.bmp", tft, 0, 0);
         waitForStart();
         gameRunning = true;
-        level = 1;
-        timeLimit = 3000;
+        level = 0;
+        timeLimit = 5000;
+        reader.drawBMP("/6000.bmp", tft, 0, 0);
+        reader.drawBMP("/6001.bmp", tft, 0, 0);
+        reader.drawBMP("/6002.bmp", tft, 0, 0);
+        reader.drawBMP("/6003.bmp", tft, 0, 0);
     }
     
     playLevel();
@@ -105,53 +109,64 @@ void resetGame() {
 }
 
 void gameOver() {
-    reader.drawBMP("/results/level_0/down_block.bmp", tft, 0, 0);
+    for(int i = 0; i < 3; i++) {
+      int index = (3009 + (13 * level) + i);
+      String filename = String(index) + ".bmp";
+      reader.drawBMP(filename.c_str(), tft, 0, 0);
+    }
 }
 
 
 void victoryScreen() {
-    reader.drawBMP("/results/level_0/down_kick.bmp", tft, 0, 0);
+    reader.drawBMP("/6004.bmp", tft, 0, 0);
 }
 
 int getPressedButton() {
-    if (digitalRead(BLOCK == HIGH)) return 1;
-    if (digitalRead(PUNCH == HIGH)) return 2;
-    if (digitalRead(KICK == HIGH)) return 3;
-    return 0;
+    if (digitalRead(PUNCH == HIGH)) return 0;
+    if (digitalRead(KICK == HIGH))  return 1;
+    if (digitalRead(BLOCK == HIGH)) return 2;
+    return -1; // No input detected
 }
 
 int getXPosition() {
-    if (analogRead(JSX < 256)) return 1; // LEFT
-    if (analogRead( JSX > 768)) return 2; // RIGHT
-    return 0; // NEUTRAL
+    if (analogRead(JSX < 256)) return 0; // LEFT
+    if (analogRead( JSX > 768)) return 1; // RIGHT
+    return 2; // NEUTRAL
 }
 
 int getYPosition() {
-    if (analogRead(JSY < 256)) return 1; // DOWN
-    if (analogRead(JSY > 768)) return 2; // UP
-    return 0; // NEUTRAL
+    if (analogRead(JSY < 256)) return 0; // DOWN
+    if (analogRead(JSY > 768)) return 1; // UP
+    return 2; // NEUTRAL
 }
 
 void playLevel() {
-    targetButton = random(1, 4); // BLOCK == 1, PUNCH == 2, KICK == 3 , 0 -> no input
-    targetPositionX = random(0, 3); // LEFT == 1, RIGHT == 2, NEUTRAL == 0
-    targetPositionY = random(0, 3); // DOWN == 1, UP == 2, NEUTRAL == 0
+    targetButton = random(0, 3);    // PUNCH == 0, KICK == 1, BLOCK == 2
+    targetPositionX = random(0, 3); // LEFT == 0, RIGHT == 1, NEUTRAL == 2
+    targetPositionY = random(0, 3); // DOWN == 0, UP == 1, NEUTRAL == 2
 
+    String filename = getCommandScreen();
+    reader.drawBMP(filename.c_str(), tft, 0, 0);
+    delay(300);
     startTime = millis();
     
     while (millis() - startTime < timeLimit) {
         int input = getPressedButton();
         int xInput = getXPosition();
         int yInput = getYPosition();
-        if (input > 0) {
-            if (validatePress(input) && validatePosition(xInput, yInput)) {
+        
+        if (input >= 0) {
+            if (validatePress(input)) {
                 
+                String name = getSuccessScreen();
+                reader.drawBMP(name.c_str(), tft, 0, 0);
                 levelUp();
                 delay(200);
                 return;  // Move to next level
             } else {
-                delay(200);
                 gameOver();
+                delay(2000);
+                resetGame();
                 return;  // Game over
             }
         }
@@ -175,4 +190,22 @@ bool validatePosition(int xInput, int yInput) {
       if(xInput == targetPositionX) return true;
       return false;
     }
+}
+
+String getCommandScreen() {
+    if(targetButton == 2) {// if a block
+      return String(targetPositionY + targetButton + (9 * level)) + ".bmp";
+    }
+    else if(targetButton == 0 || targetButton == 1) {// if a punch or kick
+      return String(targetPositionX + targetButton + (9 * level)) + ".bmp";
+    }
+}
+
+String getSuccessScreen() {
+  if(targetButton == 2) {// if a block
+    return String(3000 + targetPositionY + targetButton + (13 * level)) + ".bmp";
+  }
+    else if(targetButton == 0 || targetButton == 1) {// if a punch or kick
+      return String(3000 + targetPositionX + targetButton + (13 * level)) + ".bmp";
+  }
 }
