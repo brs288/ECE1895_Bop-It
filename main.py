@@ -7,6 +7,14 @@ special_num = 6000
 
 player_x, player_y = 115, 155
 
+"""
+Rectangle of coords used for snipping images:
+Commands: (100, 8), (220, 22)
+Scores: (144, 49), (176, 67)
+Characters: (50, 70), (280, 240)
+Game Over: (105, 4), (215, 23)
+"""
+
 COORDS = {
     "subzero": (player_x, player_y),
     "scorpion": (220, 155),
