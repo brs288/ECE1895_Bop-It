@@ -136,8 +136,8 @@ int getXPosition() {
 }
 
 int getYPosition() {
-    if (analogRead(JSY < 256)) return 0; // DOWN
-    if (analogRead(JSY > 768)) return 1; // UP
+    if (analogRead(JSY) < 256) return 0; // DOWN
+    if (analogRead(JSY) > 768) return 1; // UP
     return 2; // NEUTRAL
 }
 
