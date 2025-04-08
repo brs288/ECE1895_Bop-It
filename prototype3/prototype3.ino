@@ -33,6 +33,7 @@ bool gameRunning = false;
 
 void setup(void) {
 
+  randomSeed(analogRead(A0));
   // Initialize Pin Mode
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
@@ -58,24 +59,30 @@ void setup(void) {
   // Set volume (0 to 30)
   player.volume(10);
 
+  
   resetGame();  // Start in "Press Start" state
-  delay(2000); // Pause 2 seconds before moving on to loop()
 }
 
 void loop() {
     if (!gameRunning) {
-        reader.drawBMP("/3012.bmp", tft, 0, 0);
-        waitForStart();
+        reader.drawBMP("/3012.bmp", tft, 0, 0); // wait screen
+        waitForStart(); // Scans for an input and will hold until detected
         gameRunning = true;
         level = 0;
-        timeLimit = 5000;
-        reader.drawBMP("/6000.bmp", tft, 0, 0);
+        timeLimit = 10000;
+        reader.drawBMP("/6000.bmp", tft, 0, 0); // draw the intro sequence
         reader.drawBMP("/6001.bmp", tft, 0, 0);
         reader.drawBMP("/6002.bmp", tft, 0, 0);
         reader.drawBMP("/6003.bmp", tft, 0, 0);
     }
     
-    playLevel();
+    bool result = playLevel(); // each "level" results in a pass or fail
+
+    if (!result) { // Indicates the player failed by timeout or incorrect input
+      gameOver();
+      delay(2000);
+      resetGame();
+    }
 }
 
 void waitForStart() {
@@ -98,12 +105,6 @@ void levelUp() {
     }
 }
 
-void displayImage() {
-    unsigned int index = 0;
-
-    reader.drawBMP("/results/level_0/down_block.bmp", tft, 0, 0);
-}
-
 void resetGame() {
     gameRunning = false;
 }
@@ -122,15 +123,15 @@ void victoryScreen() {
 }
 
 int getPressedButton() {
-    if (digitalRead(PUNCH == HIGH)) return 0;
-    if (digitalRead(KICK == HIGH))  return 1;
-    if (digitalRead(BLOCK == HIGH)) return 2;
+    if (digitalRead(PUNCH) == HIGH) return 0;
+    if (digitalRead(KICK) == HIGH)  return 1;
+    if (digitalRead(BLOCK) == HIGH) return 2;
     return -1; // No input detected
 }
 
 int getXPosition() {
-    if (analogRead(JSX < 256)) return 0; // LEFT
-    if (analogRead( JSX > 768)) return 1; // RIGHT
+    if (analogRead(JSX) < 256) return 0; // LEFT
+    if (analogRead(JSX) > 768) return 1; // RIGHT
     return 2; // NEUTRAL
 }
 
@@ -140,14 +141,13 @@ int getYPosition() {
     return 2; // NEUTRAL
 }
 
-void playLevel() {
+bool playLevel() {
     targetButton = random(0, 3);    // PUNCH == 0, KICK == 1, BLOCK == 2
     targetPositionX = random(0, 3); // LEFT == 0, RIGHT == 1, NEUTRAL == 2
     targetPositionY = random(0, 3); // DOWN == 0, UP == 1, NEUTRAL == 2
 
     String filename = getCommandScreen();
     reader.drawBMP(filename.c_str(), tft, 0, 0);
-    delay(300);
     startTime = millis();
     
     while (millis() - startTime < timeLimit) {
@@ -156,21 +156,18 @@ void playLevel() {
         int yInput = getYPosition();
         
         if (input >= 0) {
-            if (validatePress(input)) {
+            if (validatePress(input) && validatePosition(xInput, yInput)) {
                 
                 String name = getSuccessScreen();
                 reader.drawBMP(name.c_str(), tft, 0, 0);
                 levelUp();
                 delay(200);
-                return;  // Move to next level
+                return true;  // Move to next level
             } else {
-                gameOver();
-                delay(2000);
-                resetGame();
-                return;  // Game over
+                return false;  // Wrong Move
             }
         }
-    }
+    } return false; // Timeout
 }
 
 bool validatePress(int input) {
@@ -194,18 +191,18 @@ bool validatePosition(int xInput, int yInput) {
 
 String getCommandScreen() {
     if(targetButton == 2) {// if a block
-      return String(targetPositionY + targetButton + (9 * level)) + ".bmp";
+      return String(targetPositionY + (3 * targetButton) + (9 * level)) + ".bmp";
     }
     else if(targetButton == 0 || targetButton == 1) {// if a punch or kick
-      return String(targetPositionX + targetButton + (9 * level)) + ".bmp";
+      return String(targetPositionX + (3 * targetButton) + (9 * level)) + ".bmp";
     }
 }
 
 String getSuccessScreen() {
   if(targetButton == 2) {// if a block
-    return String(3000 + targetPositionY + targetButton + (13 * level)) + ".bmp";
+    return String(3000 + targetPositionY + (3 * targetButton) + (13 * level)) + ".bmp";
   }
     else if(targetButton == 0 || targetButton == 1) {// if a punch or kick
-      return String(3000 + targetPositionX + targetButton + (13 * level)) + ".bmp";
+      return String(3000 + targetPositionX + (3 * targetButton) + (13 * level)) + ".bmp";
   }
 }
