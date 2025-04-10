@@ -1,0 +1,20 @@
+punch: 0
+kick: 1
+block: 2
+no input: -1
+
+if punch or kick:
+	left: 0
+	right: 1
+	neutral: 2
+
+if block:
+	up: 0
+	down: 1
+	neutral: 2
+
+to find audio index multiply the action by 3 and then add the direction then add 1 for the 1 indexing.
+
+to find image of the command multiply the action by 3 and then add the direction then add 9*currentLevel
+
+to find image of the success add 3000 then add the action multiplied by 3 then add the direction then add 13*currentLevel
