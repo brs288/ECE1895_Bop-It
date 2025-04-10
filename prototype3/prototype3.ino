@@ -23,7 +23,7 @@ Adafruit_ILI9341     tft    = Adafruit_ILI9341(TFT_CS, TFT_DC); // display
 DFRobotDFPlayerMini player; // audioplayer
 
 int level = 0;
-int timeLimit = 5000;
+int timeLimit = 8500;
 int timeInitial = timeLimit;
 unsigned long startTime;
 int targetButton;
@@ -57,8 +57,9 @@ void setup(void) {
   }
 
   // Set volume (0 to 30)
-  player.volume(10);
+  player.volume(30);
 
+  reader.drawBMP()
   
   resetGame();  // Start in "Press Start" state
 }
@@ -69,7 +70,7 @@ void loop() {
         waitForStart(); // Scans for an input and will hold until detected
         gameRunning = true;
         level = 0;
-        timeLimit = 10000;
+        timeLimit = 8500;
         reader.drawBMP("/6000.bmp", tft, 0, 0); // draw the intro sequence
         reader.drawBMP("/6001.bmp", tft, 0, 0);
         reader.drawBMP("/6002.bmp", tft, 0, 0);
@@ -123,9 +124,9 @@ void victoryScreen() {
 }
 
 int getPressedButton() {
-    if (digitalRead(PUNCH) == HIGH) return 0;
-    if (digitalRead(KICK) == HIGH)  return 1;
-    if (digitalRead(BLOCK) == HIGH) return 2;
+    if (digitalRead(PUNCH) == HIGH && digitalRead(KICK) == LOW && digitalRead(BLOCK) == LOW) return 0;
+    if (digitalRead(KICK) == HIGH && digitalRead(PUNCH) == LOW && digitalRead(BLOCK) == LOW)  return 1;
+    if (digitalRead(BLOCK) == HIGH && digitalRead(PUNCH) == LOW && digitalRead(KICK) == LOW) return 2;
     return -1; // No input detected
 }
 
@@ -136,17 +137,19 @@ int getXPosition() {
 }
 
 int getYPosition() {
-    if (analogRead(JSY) < 256) return 0; // DOWN
-    if (analogRead(JSY) > 768) return 1; // UP
+    if (analogRead(JSY) < 256) return 0; // UP
+    if (analogRead(JSY) > 768) return 1; // DOWN
     return 2; // NEUTRAL
 }
 
 bool playLevel() {
     targetButton = random(0, 3);    // PUNCH == 0, KICK == 1, BLOCK == 2
     targetPositionX = random(0, 3); // LEFT == 0, RIGHT == 1, NEUTRAL == 2
-    targetPositionY = random(0, 3); // DOWN == 0, UP == 1, NEUTRAL == 2
-
+    targetPositionY = random(0, 3); // UP == 0, DOWN == 1, NEUTRAL == 2
+    int audio_track;
+    targetButton == 2? audio_track = targetPositionY + (3 * targetButton) + 1 : audio_track = targetPositionX + (3 * targetButton) + 1;
     String filename = getCommandScreen();
+    player.play(audio_track);
     reader.drawBMP(filename.c_str(), tft, 0, 0);
     startTime = millis();
     
@@ -179,11 +182,11 @@ bool validatePress(int input) {
 }
 
 bool validatePosition(int xInput, int yInput) {
-    if(targetButton == 0) {// if a block
+    if(targetButton == 2) {// if a block
       if(yInput == targetPositionY) return true;
       return false;
     }
-    else if(targetButton == 1 || targetButton == 2) {// if a punch or kick
+    else if(targetButton == 0 || targetButton == 1) {// if a punch or kick
       if(xInput == targetPositionX) return true;
       return false;
     }
