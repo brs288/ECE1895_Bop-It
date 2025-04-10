@@ -58,8 +58,6 @@ void setup(void) {
 
   // Set volume (0 to 30)
   player.volume(30);
-
-  reader.drawBMP()
   
   resetGame();  // Start in "Press Start" state
 }
@@ -98,6 +96,7 @@ void waitForStart() {
 void levelUp() {
     if (level == 99) {
         victoryScreen();
+        delay(2000);
         resetGame();
     } else {
         level++;
@@ -121,6 +120,7 @@ void gameOver() {
 
 void victoryScreen() {
     reader.drawBMP("/6004.bmp", tft, 0, 0);
+
 }
 
 int getPressedButton() {
