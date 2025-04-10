@@ -34,7 +34,7 @@ bool gameRunning = false;
 void setup(void) {
 
   randomSeed(analogRead(A0));
-  // Initialize Pin Mode
+  // Initialize Pin de
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pinMode(A2, INPUT);
