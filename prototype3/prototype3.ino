@@ -2,7 +2,7 @@
 #include <Adafruit_ILI9341.h>     // Hardware-specific library
 #include <SdFat.h>                // SD card & FAT filesystem library
 #include <Adafruit_ImageReader.h> // Image-reading functions
-#include <DFRobotDFPlayerMini.h>
+#include <DFRobotDFPlayerMini.h>  // Audio Library
 
 #define SD_CS   4 // SD card select pin
 #define TFT_DC  9 // TFT display/command pin
@@ -57,7 +57,7 @@ void setup(void) {
   }
 
   // Set volume (0 to 30)
-  player.volume(30);
+  player.volume(15);
   
   resetGame();  // Start in "Press Start" state
 }
@@ -72,6 +72,7 @@ void loop() {
         reader.drawBMP("/6000.bmp", tft, 0, 0); // draw the intro sequence
         reader.drawBMP("/6001.bmp", tft, 0, 0);
         reader.drawBMP("/6002.bmp", tft, 0, 0);
+        player.playFolder(3, 1);
         reader.drawBMP("/6003.bmp", tft, 0, 0);
     }
     
@@ -85,8 +86,11 @@ void loop() {
 }
 
 void waitForStart() {
+    player.loopFolder(4); // play menu music
     while (true) {
         if (digitalRead(START) == HIGH) {
+            player.stop();
+            player.volume(30);
             delay(200);  // Debounce delay
             return;
         }
@@ -95,6 +99,7 @@ void waitForStart() {
 
 void levelUp() {
     if (level == 99) {
+        player.playFolder(3, 2); // play victory
         victoryScreen();
         delay(2000);
         resetGame();
@@ -113,6 +118,8 @@ void gameOver() {
     for(int i = 0; i < 3; i++) {
       int index = (3009 + (13 * level) + i);
       String filename = String(index) + ".bmp";
+      if (i == 0) player.playFolder(2,1); // play hit sound
+      if (i == 2) player.playFolder(3, 3); // play evil laugh
       reader.drawBMP(filename.c_str(), tft, 0, 0);
     }
 }
@@ -149,7 +156,7 @@ bool playLevel() {
     int audio_track;
     targetButton == 2? audio_track = targetPositionY + (3 * targetButton) + 1 : audio_track = targetPositionX + (3 * targetButton) + 1;
     String filename = getCommandScreen();
-    player.play(audio_track);
+    player.playFolder(1, audio_track);
     reader.drawBMP(filename.c_str(), tft, 0, 0);
     startTime = millis();
     
@@ -162,6 +169,7 @@ bool playLevel() {
             if (validatePress(input) && validatePosition(xInput, yInput)) {
                 
                 String name = getSuccessScreen();
+                player.playFolder(2, audio_track);
                 reader.drawBMP(name.c_str(), tft, 0, 0);
                 levelUp();
                 delay(200);
